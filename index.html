@@ -295,6 +295,36 @@
       </div>
     </div>
 
+        <!-- ========================================== -->
+    <!-- MODAL 3: EDIT / DELETE HABIT (Long Press)  -->
+    <!-- ========================================== -->
+    <div id="modal-edit-habit" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="edit-modal-color-dot" class="w-3 h-3 rounded-full inline-block"></span>
+            <h3 class="text-base font-bold text-neutral-900">트래커 관리</h3>
+          </div>
+          <button id="btn-close-edit-modal" aria-label="닫기" class="p-1 rounded-full text-neutral-400 hover:text-neutral-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div>
+          <label for="input-edit-habit-title" class="block text-xs font-semibold text-neutral-600 mb-1">이름 변경</label>
+          <input id="input-edit-habit-title" type="text" class="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:border-neutral-900 text-sm">
+        </div>
+
+        <button id="btn-save-edit-habit" class="w-full py-2.5 bg-neutral-900 hover:bg-black text-white font-semibold rounded-xl text-sm transition">
+          이름 변경하기
+        </button>
+
+        <button id="btn-delete-habit-action" class="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-200/80">
+          이 트래커 삭제하기
+        </button>
+      </div>
+    </div>
+
     <!-- In-Page Toast Notification -->
     <div id="toast-message" class="pointer-events-none fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl opacity-0 transition-opacity duration-300">
       저장되었습니다
@@ -565,8 +595,52 @@
           card.appendChild(circleBtn);
         }
 
-        // Click to toggle
-        card.addEventListener('click', () => {
+        // Long press handling for editing/deleting (mobile touch + desktop mouse)
+        let pressTimer = null;
+        let isLongPress = false;
+
+        const startPress = (e) => {
+          isLongPress = false;
+          pressTimer = setTimeout(() => {
+            isLongPress = true;
+            if (navigator.vibrate) navigator.vibrate(30);
+            openEditModal(habit);
+          }, 500);
+        };
+
+        const cancelPress = () => {
+          if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          }
+        };
+
+        card.addEventListener('touchstart', startPress, { passive: true });
+        card.addEventListener('touchend', (e) => {
+          cancelPress();
+          if (isLongPress) {
+            e.preventDefault();
+          }
+        });
+        card.addEventListener('touchmove', cancelPress, { passive: true });
+        card.addEventListener('touchcancel', cancelPress);
+
+        card.addEventListener('mousedown', startPress);
+        card.addEventListener('mouseup', cancelPress);
+        card.addEventListener('mouseleave', cancelPress);
+
+        // Right-click / context menu for desktop users
+        card.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          openEditModal(habit);
+        });
+
+        // Click to toggle only when NOT a long press
+        card.addEventListener('click', (e) => {
+          if (isLongPress) {
+            isLongPress = false;
+            return;
+          }
           toggleHabit(habit.id);
         });
 
@@ -960,6 +1034,41 @@
         document.getElementById('btn-tab-heatmap').className = 'px-2.5 py-0.5 rounded-md bg-white shadow-xs text-neutral-900 transition';
         document.getElementById('btn-tab-matrix').className = 'px-2.5 py-0.5 rounded-md text-neutral-500 hover:text-neutral-900 transition';
         document.getElementById('monthly-subview-title').textContent = '월간 실천 캘린더';
+      });
+
+      // Edit Modal Listeners
+      document.getElementById('btn-close-edit-modal').addEventListener('click', () => {
+        document.getElementById('modal-edit-habit').classList.add('hidden');
+        currentEditingHabitId = null;
+      });
+
+      // Save habit title edit
+      document.getElementById('btn-save-edit-habit').addEventListener('click', () => {
+        if (!currentEditingHabitId) return;
+        const newTitle = document.getElementById('input-edit-habit-title').value.trim();
+        if (!newTitle) {
+          showToast('트래커 이름을 입력해주세요');
+          return;
+        }
+        const target = habits.find(h => h.id === currentEditingHabitId);
+        if (target) {
+          target.title = newTitle;
+          persistData();
+          renderDailyView();
+          renderMonthlyView();
+          document.getElementById('modal-edit-habit').classList.add('hidden');
+          currentEditingHabitId = null;
+          showToast('이름이 변경되었습니다');
+        }
+      });
+
+      // Delete habit action
+      document.getElementById('btn-delete-habit-action').addEventListener('click', () => {
+        if (!currentEditingHabitId) return;
+        const targetId = currentEditingHabitId;
+        document.getElementById('modal-edit-habit').classList.add('hidden');
+        currentEditingHabitId = null;
+        deleteHabit(targetId);
       });
 
       // Add Habit Modal: Auto-assigns random color, no manual picker
