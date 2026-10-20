@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>daily & monthly habit tracker</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tuffy:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    
+    * {
+      font-family: 'Tuffy', Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .force-lowercase {
+      text-transform: lowercase;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 9999px;
+    }
+
+    .habit-card {
+      transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .habit-card:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body class="bg-neutral-100 text-neutral-800 antialiased min-h-screen flex justify-center selection:bg-neutral-200">
+
+  <!-- Mobile Screen Container -->
+  <main id="app-container" class="w-full max-w-md min-h-screen bg-white relative flex flex-col shadow-2xl border-x border-neutral-200 overflow-x-hidden">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: DAILY TRACKER                      -->
+    <!-- ========================================== -->
+    <section id="view-daily" class="flex-1 flex flex-col p-5 pb-20 transition-all duration-300">
+      
+      <!-- Top Header Row -->
+      <header class="flex items-start justify-between mb-2 pt-1">
+        <!-- Day name + Minimal Black Dot -->
+        <div class="flex items-center gap-2">
+          <h1 id="header-day-name" class="text-3xl font-extrabold tracking-tight text-neutral-900 force-lowercase">fri</h1>
+          <span class="w-3 h-3 rounded-full bg-neutral-900 inline-block"></span>
+        </div>
+        <!-- Date & Year -->
+        <div class="text-right force-lowercase">
+          <p id="header-month-day" class="text-sm font-semibold text-neutral-700">december 9</p>
+          <p id="header-year" class="text-xs font-normal text-neutral-400">2026</p>
+        </div>
+      </header>
+
+      <!-- 1. Week Calendar Strip -->
+      <nav aria-label="주간 날짜 선택" class="mb-3">
+        <div class="flex items-center justify-between mb-1.5">
+          <button id="btn-prev-week" aria-label="이전 주" class="p-1 rounded-full text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button id="btn-today-jump" class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition">오늘</button>
+          <button id="btn-next-week" aria-label="다음 주" class="p-1 rounded-full text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <!-- 7 Days Grid with light gray border strokes -->
+        <div id="week-strip-container" class="grid grid-cols-7 gap-1 text-center">
+          <!-- Dynamically populated -->
+        </div>
+      </nav>
+
+      <!-- 2. 오늘의 트래커 실천: Right Above the Tracker Grid! -->
+      <section aria-label="오늘의 실천 현황" class="mb-3 pt-1 pb-1">
+        <div class="flex items-center justify-between text-[11px] mb-1">
+          <span class="font-semibold text-neutral-800">오늘의 트래커 실천</span>
+          <span id="daily-progress-detail" class="font-semibold text-neutral-500 force-lowercase">0 / 0 완료 (0%)</span>
+        </div>
+        <div class="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden border border-neutral-200/50">
+          <div id="daily-progress-bar" class="bg-neutral-900 h-full transition-all duration-300 rounded-full" style="width: 0%"></div>
+        </div>
+      </section>
+
+      <!-- 3. 2-Column Habit Grid: Checked turns into centered colored card! -->
+      <section aria-label="체크리스트" class="flex-1">
+        <div id="habits-list-container" class="grid grid-cols-2 gap-2.5">
+          <!-- Dynamic Items inserted here in 2 columns -->
+        </div>
+        
+        <!-- Empty state placeholder -->
+        <div id="habits-empty-state" class="hidden text-center py-10 px-4">
+          <p class="text-sm font-semibold text-neutral-700 mb-1">등록된 트래커가 없습니다</p>
+          <p class="text-xs text-neutral-400 mb-3">하단의 + 추가를 눌러 트래커를 추가해보세요.</p>
+          <button id="btn-add-empty-habit" class="text-xs font-medium px-3.5 py-1.5 bg-neutral-900 text-white rounded-xl hover:bg-neutral-800 transition">
+            + 트래커 추가하기
+          </button>
+        </div>
+      </section>
+
+      <!-- Bottom Bar (Clean Text Only) -->
+      <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-6 py-3.5 bg-white/95 backdrop-blur-md border-t border-neutral-100 flex items-center justify-between z-20">
+        <button id="btn-go-monthly" class="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition py-1">
+          월간 보기
+        </button>
+
+        <button id="btn-open-add-habit" class="text-xs font-semibold text-neutral-800 hover:text-black transition py-1">
+          + 추가
+        </button>
+
+        <button id="btn-open-settings" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition py-1">
+          백업
+        </button>
+      </footer>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: MONTHLY VIEW                       -->
+    <!-- ========================================== -->
+    <section id="view-monthly" class="hidden flex-1 flex flex-col bg-white min-h-screen transition-all duration-300">
+      
+      <!-- Top Bar -->
+      <header class="p-5 pb-3 flex items-center justify-between text-neutral-900 border-b border-neutral-100 bg-white">
+        <button id="btn-back-to-daily" class="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition py-1">
+          데일리
+        </button>
+
+        <!-- Month Navigator -->
+        <div class="flex items-center gap-2">
+          <button id="btn-prev-month" aria-label="이전 달" class="p-1 rounded-full hover:bg-neutral-100 transition">
+            <svg class="w-4 h-4 text-neutral-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <h2 id="monthly-title" class="text-sm font-bold text-neutral-900 tracking-tight force-lowercase">2026년 10월</h2>
+          <button id="btn-next-month" aria-label="다음 달" class="p-1 rounded-full hover:bg-neutral-100 transition">
+            <svg class="w-4 h-4 text-neutral-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <!-- Month Rate Badge -->
+        <div id="monthly-header-badge" class="px-2 py-0.5 bg-neutral-900 text-white text-[11px] font-bold rounded-full">
+          0% 달성
+        </div>
+      </header>
+
+      <!-- Inner Content Area -->
+      <div class="flex-1 bg-white p-5 pb-20 flex flex-col gap-5 overflow-y-auto">
+        
+        <!-- Header title -->
+        <div class="flex items-center justify-between pb-2 border-b border-neutral-100">
+          <h3 class="text-base font-bold text-neutral-900">월간 트래커 통계</h3>
+          <span class="text-xs text-neutral-400 font-medium" id="monthly-active-habits-count">습관 8개</span>
+        </div>
+
+        <!-- 1. Monthly Summary Stat Cards -->
+        <div class="grid grid-cols-3 gap-2">
+          <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-center">
+            <p class="text-[10px] font-medium text-neutral-500 mb-0.5">평균 달성률</p>
+            <p id="stat-overall-rate" class="text-lg font-bold text-neutral-900">0%</p>
+          </div>
+          <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-center">
+            <p class="text-[10px] font-medium text-neutral-500 mb-0.5">최장 연속</p>
+            <p id="stat-best-streak" class="text-lg font-bold text-neutral-900">0일</p>
+          </div>
+          <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-center">
+            <p class="text-[10px] font-medium text-neutral-500 mb-0.5">총 완료</p>
+            <p id="stat-total-checks" class="text-lg font-bold text-neutral-900">0회</p>
+          </div>
+        </div>
+
+        <!-- 2. Matrix & Calendar Switcher -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-neutral-900" id="monthly-subview-title">1~31일 실천 매트릭스</h4>
+            <div class="inline-flex rounded-lg bg-neutral-100 p-0.5 text-[10px] font-semibold">
+              <button id="btn-tab-matrix" class="px-2.5 py-0.5 rounded-md bg-white shadow-xs text-neutral-900 transition">매트릭스</button>
+              <button id="btn-tab-heatmap" class="px-2.5 py-0.5 rounded-md text-neutral-500 hover:text-neutral-900 transition">캘린더</button>
+            </div>
+          </div>
+
+          <!-- A. Matrix View: Columns are a, b, c, d... Rows are 1..31 -->
+          <div id="subview-matrix" class="flex flex-col gap-3">
+            <div class="w-full overflow-x-auto pb-1">
+              <div id="matrix-grid-table" class="inline-block min-w-full">
+                <!-- Dynamically generated with a, b, c, d... headers -->
+              </div>
+            </div>
+
+            <!-- Legend: Clean continuous inline list without extra title/line -->
+            <div class="w-full bg-neutral-50 rounded-xl p-3 border border-neutral-200/80">
+              <div id="matrix-legend-list" class="flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-neutral-700">
+                <!-- Dynamically populated inline chips -->
+              </div>
+            </div>
+          </div>
+
+          <!-- B. Calendar View: Each day cell has colorful dots -->
+          <div id="subview-heatmap" class="hidden flex flex-col gap-2">
+            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-neutral-400 mb-0.5 force-lowercase">
+              <span>sun</span><span>mon</span><span>tue</span><span>wed</span><span>thu</span><span>fri</span><span>sat</span>
+            </div>
+            <div id="calendar-heatmap-grid" class="grid grid-cols-7 gap-1.5">
+              <!-- Dynamically populated day cells with colored dots -->
+            </div>
+            <!-- Calendar Legend: Clean continuous inline list without extra sentence -->
+            <div class="mt-1 p-3 bg-neutral-50 rounded-xl border border-neutral-200/80">
+              <div id="calendar-dot-legend" class="flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-neutral-700">
+                <!-- Populated with color dots + titles inline -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Habit Completion Progress Bars -->
+        <div class="flex flex-col gap-2.5 pt-2 border-t border-neutral-100">
+          <h4 class="text-xs font-bold text-neutral-900">습관별 이달의 달성률</h4>
+          <div id="monthly-habits-progress-list" class="flex flex-col gap-2">
+            <!-- Dynamically populated progress bars -->
+          </div>
+        </div>
+
+        <!-- Bottom back text link -->
+        <div class="pt-2 text-center">
+          <button id="btn-back-to-daily-bottom" class="text-xs font-semibold text-neutral-600 hover:text-neutral-900 py-2">
+            데일리 체크하러 가기
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: ADD HABIT (Name Only, Color is Auto-Assigned) -->
+    <!-- ========================================== -->
+    <div id="modal-add-habit" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-neutral-900" id="modal-habit-title">새 트래커 추가</h3>
+          <button id="btn-close-habit-modal" aria-label="닫기" class="p-1 rounded-full text-neutral-400 hover:text-neutral-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Name input (Only thing required!) -->
+        <div>
+          <label for="input-habit-title" class="block text-xs font-semibold text-neutral-600 mb-1">트래커 이름</label>
+          <input id="input-habit-title" type="text" placeholder="예: 물 2L 마시기, 영어 단어" class="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:border-neutral-900 text-sm">
+        </div>
+
+        <button id="btn-save-habit" class="w-full mt-1 py-2.5 bg-neutral-900 hover:bg-black text-white font-semibold rounded-xl text-sm transition">
+          저장하기
+        </button>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: SETTINGS & BACKUP                 -->
+    <!-- ========================================== -->
+    <div id="modal-settings" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-neutral-900">데이터 저장 및 백업</h3>
+          <button id="btn-close-settings-modal" aria-label="닫기" class="p-1 rounded-full text-neutral-400 hover:text-neutral-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <p class="text-xs text-neutral-500 leading-relaxed">
+          체크 기록은 기기 브라우저에 안전하게 보관됩니다. 기기 변경이나 청소에 대비해 파일로 다운로드해두세요.
+        </p>
+
+        <!-- Backup Action -->
+        <button id="btn-export-json" class="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold rounded-xl transition text-xs">
+          내 데이터 백업하기 (.json 파일 저장)
+        </button>
+
+        <!-- Restore Action -->
+        <label for="input-restore-file" class="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold rounded-xl transition text-xs text-center cursor-pointer block">
+          백업 파일 불러오기 (복원)
+        </label>
+        <input type="file" id="input-restore-file" accept=".json" class="hidden">
+
+        <!-- Reset Sample Data -->
+        <button id="btn-reset-sample" class="w-full py-2 text-xs text-neutral-400 hover:text-neutral-900 font-medium transition text-center">
+          예시 샘플 데이터 다시 채우기
+        </button>
+      </div>
+    </div>
+
+    <!-- In-Page Toast Notification -->
+    <div id="toast-message" class="pointer-events-none fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl opacity-0 transition-opacity duration-300">
+      저장되었습니다
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT LOGIC                           -->
+  <!-- ========================================== -->
+  <script>
+    const Storage = {
+      get: (key, fallback) => {
+        try {
+          const item = localStorage.getItem(key);
+          return item ? JSON.parse(item) : fallback;
+        } catch (e) {
+          console.warn('Storage read error:', e);
+          return fallback;
+        }
+      },
+      set: (key, value) => {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+          return true;
+        } catch (e) {
+          console.warn('Storage write error:', e);
+          return false;
+        }
+      }
+    };
+
+    // Full Color Palette from user's poster
+    const POSTER_PALETTE = [
+      '#424a9f', // Cobalt Blue
+      '#cf2526', // Vermilion Red
+      '#f8ee12', // Warm Solar Yellow
+      '#6bcade', // Cyan Sky
+      '#c7d736', // Chartreuse Lime
+      '#da5b88', // Coral Pink
+      '#cf681d', // Tangerine Orange
+      '#6b1f5d', // Deep Violet Plum
+      '#916f94', // Lilac Grey
+      '#a37748', // Ochre Brown
+      '#d3ac69', // Sand Gold
+      '#d43a78', // Vivid Magenta
+      '#625ca6', // Purple Iris
+      '#89b671', // Sage Olive
+      '#d0632b', // Rust Orange
+      '#d3e7b4'  // Pale Mint
+    ];
+
+    const ALPHABET_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
+
+    // User's 8 Default Habits with artwork colors
+    const USER_DEFAULT_HABITS = [
+      { id: 'h1', title: '책 읽기', color: '#424a9f' },
+      { id: 'h2', title: '운동하기', color: '#cf2526' },
+      { id: 'h3', title: '일기 쓰기', color: '#f8ee12' },
+      { id: 'h4', title: '영화 보기', color: '#6bcade' },
+      { id: 'h5', title: '취미 활동', color: '#c7d736' },
+      { id: 'h6', title: '도안 그리기', color: '#da5b88' },
+      { id: 'h7', title: '클래스 101 듣기', color: '#cf681d' },
+      { id: 'h8', title: '돈 안 쓰기', color: '#6b1f5d' }
+    ];
+
+    function generateSeedLogs() { return {};
+      const logs = {};
+      const year = 2026;
+      const month = 10;
+      for (let day = 1; day <= 20; day++) {
+        const dStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const completed = [];
+        if (day % 1 !== 0) continue;
+        if (day % 2 === 0 || day % 3 === 0) completed.push('h1');
+        if (day % 2 !== 0) completed.push('h2');
+        if (day % 3 !== 0) completed.push('h3');
+        if (day % 4 !== 0) completed.push('h4');
+        if (day % 2 === 0) completed.push('h5');
+        if (day % 3 === 0) completed.push('h6');
+        if (day % 5 !== 0) completed.push('h7');
+        if (day % 3 !== 0) completed.push('h8');
+        logs[dStr] = completed;
+      }
+      return logs;
+    }
+
+    // Clean reset for actual use: clear mock logs so all records start fresh from 0
+    if (!Storage.get('my_tracker_clean_v1', false)) {
+      Storage.set('my_tracker_habits', USER_DEFAULT_HABITS);
+      Storage.set('my_tracker_logs', {});
+      Storage.set('my_tracker_clean_v1', true);
+    }
+    let habits = Storage.get('my_tracker_habits', USER_DEFAULT_HABITS);
+    let logs = Storage.get('my_tracker_logs', {});
+    
+    // Default active date: 2026-10-20
+    let selectedDate = new Date(2026, 9, 20);
+    let monthlyViewingDate = new Date(2026, 9, 1);
+    let activeSubTab = 'matrix';
+
+    function formatDateKey(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast-message');
+      el.textContent = msg;
+      el.classList.remove('opacity-0');
+      el.classList.add('opacity-100');
+      setTimeout(() => {
+        el.classList.remove('opacity-100');
+        el.classList.add('opacity-0');
+      }, 2000);
+    }
+
+    function persistData() {
+      Storage.set('my_tracker_habits', habits);
+      Storage.set('my_tracker_logs', logs);
+    }
+
+    // High contrast text color calculation for colored cards
+    function getContrastTextColor(hex) {
+      if (!hex || hex[0] !== '#') return '#ffffff';
+      const r = parseInt(hex.substr(1, 2), 16);
+      const g = parseInt(hex.substr(3, 2), 16);
+      const b = parseInt(hex.substr(5, 2), 16);
+      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      return (yiq >= 150) ? '#171717' : '#ffffff';
+    }
+
+    // Pick an unused or random color from poster palette (never changes once assigned)
+    function getNextPosterColor() {
+      const usedColors = habits.map(h => h.color.toLowerCase());
+      const available = POSTER_PALETTE.filter(c => !usedColors.includes(c.toLowerCase()));
+      if (available.length > 0) {
+        return available[Math.floor(Math.random() * available.length)];
+      }
+      return POSTER_PALETTE[Math.floor(Math.random() * POSTER_PALETTE.length)];
+    }
+
+    // ==========================================
+    // RENDER: DAILY VIEW
+    // ==========================================
+    function renderDailyView() {
+      const dayNamesEn = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const monthNamesEn = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+
+      const dayOfWeek = dayNamesEn[selectedDate.getDay()];
+      const monthName = monthNamesEn[selectedDate.getMonth()];
+      const dayNumber = selectedDate.getDate();
+      const year = selectedDate.getFullYear();
+
+      document.getElementById('header-day-name').textContent = dayOfWeek;
+      document.getElementById('header-month-day').textContent = `${monthName} ${dayNumber}`;
+      document.getElementById('header-year').textContent = `${year}`;
+
+      renderWeekStrip();
+      renderHabitList();
+    }
+
+    function renderWeekStrip() {
+      const container = document.getElementById('week-strip-container');
+      container.innerHTML = '';
+
+      const current = new Date(selectedDate);
+      const day = current.getDay();
+      const diffToMonday = current.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(current.setDate(diffToMonday));
+
+      const dayLetters = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+      const selectedKey = formatDateKey(selectedDate);
+
+      for (let i = 0; i < 7; i++) {
+        const iterDate = new Date(monday);
+        iterDate.setDate(monday.getDate() + i);
+        const iterKey = formatDateKey(iterDate);
+        const isSelected = iterKey === selectedKey;
+
+        const dayBtn = document.createElement('button');
+        dayBtn.type = 'button';
+        dayBtn.setAttribute('aria-label', `${iterDate.getMonth()+1}월 ${iterDate.getDate()}일 선택`);
+        dayBtn.className = `flex flex-col items-center py-1.5 px-0.5 rounded-xl transition-all ${
+          isSelected 
+            ? 'border-2 border-neutral-900 bg-neutral-100 shadow-xs' 
+            : 'border border-neutral-200/80 bg-white hover:bg-neutral-50 text-neutral-500'
+        }`;
+
+        dayBtn.innerHTML = `
+          <span class="text-sm font-bold ${isSelected ? 'text-neutral-900' : 'text-neutral-700'}">${iterDate.getDate()}</span>
+          <span class="text-[9px] font-semibold tracking-wider ${isSelected ? 'text-neutral-900 font-bold' : 'text-neutral-400'} force-lowercase">${dayLetters[i]}</span>
+        `;
+
+        dayBtn.addEventListener('click', () => {
+          selectedDate = new Date(iterDate);
+          renderDailyView();
+        });
+
+        container.appendChild(dayBtn);
+      }
+    }
+
+    // Render Habit 2-Column Grid
+    // Checked: card background is habit.color, text is centered with high-contrast text color, NO check circle!
+    // Unchecked: card background is white, text on left, empty circle on right.
+    // Checked items auto-sort to the bottom!
+    function renderHabitList() {
+      const container = document.getElementById('habits-list-container');
+      const emptyState = document.getElementById('habits-empty-state');
+      container.innerHTML = '';
+
+      if (habits.length === 0) {
+        emptyState.classList.remove('hidden');
+        updateDailyProgress(0, 0);
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      const dateKey = formatDateKey(selectedDate);
+      const completedList = logs[dateKey] || [];
+
+      const uncheckedHabits = [];
+      const checkedHabits = [];
+
+      habits.forEach(h => {
+        if (completedList.includes(h.id)) {
+          checkedHabits.push(h);
+        } else {
+          uncheckedHabits.push(h);
+        }
+      });
+
+      const sortedHabits = [...uncheckedHabits, ...checkedHabits];
+      const checkedCount = checkedHabits.length;
+
+      sortedHabits.forEach((habit) => {
+        const isChecked = completedList.includes(habit.id);
+
+        const card = document.createElement('div');
+
+        if (isChecked) {
+          // CHECKED STATE: Background is habit's unique color, centered text, NO circle outline!
+          const textColor = getContrastTextColor(habit.color);
+          card.className = 'habit-card relative rounded-2xl p-3 flex items-center justify-center cursor-pointer select-none shadow-xs border border-transparent';
+          card.style.backgroundColor = habit.color;
+
+          const titleSpan = document.createElement('span');
+          titleSpan.className = 'text-xs font-semibold text-center truncate';
+          titleSpan.style.color = textColor;
+          titleSpan.textContent = habit.title;
+          card.appendChild(titleSpan);
+
+        } else {
+          // UNCHECKED STATE: White background, light gray border, text on left, empty circle on right!
+          card.className = 'habit-card relative rounded-2xl border border-neutral-200/90 bg-white p-3 flex items-center justify-between cursor-pointer select-none shadow-2xs hover:border-neutral-300';
+
+          const titleSpan = document.createElement('span');
+          titleSpan.className = 'text-xs font-medium text-neutral-900 text-left truncate flex-1 pr-1.5';
+          titleSpan.textContent = habit.title;
+
+          const circleBtn = document.createElement('div');
+          circleBtn.className = 'w-4 h-4 rounded-full border-[1.5px] border-neutral-900 bg-white flex-shrink-0';
+
+          card.appendChild(titleSpan);
+          card.appendChild(circleBtn);
+        }
+
+        // Click to toggle
+        card.addEventListener('click', () => {
+          toggleHabit(habit.id);
+        });
+
+        container.appendChild(card);
+      });
+
+      updateDailyProgress(checkedCount, habits.length);
+    }
+
+    function toggleHabit(habitId) {
+      const dateKey = formatDateKey(selectedDate);
+      if (!logs[dateKey]) {
+        logs[dateKey] = [];
+      }
+      const idx = logs[dateKey].indexOf(habitId);
+      if (idx > -1) {
+        logs[dateKey].splice(idx, 1);
+      } else {
+        logs[dateKey].push(habitId);
+      }
+      persistData();
+      renderHabitList();
+    }
+
+    function deleteHabit(habitId) {
+      habits = habits.filter(h => h.id !== habitId);
+      persistData();
+      renderHabitList();
+      showToast('트래커가 삭제되었습니다');
+    }
+
+    function updateDailyProgress(checked, total) {
+      const pct = total === 0 ? 0 : Math.round((checked / total) * 100);
+      document.getElementById('daily-progress-detail').textContent = `${checked} / ${total} 완료 (${pct}%)`;
+      document.getElementById('daily-progress-bar').style.width = `${pct}%`;
+    }
+
+    // ==========================================
+    // RENDER: MONTHLY VIEW
+    // ==========================================
+    function renderMonthlyView() {
+      const year = monthlyViewingDate.getFullYear();
+      const monthNum = monthlyViewingDate.getMonth() + 1;
+
+      document.getElementById('monthly-title').textContent = `${year}년 ${monthNum}월`;
+
+      const daysInMonth = new Date(year, monthNum, 0).getDate();
+      document.getElementById('monthly-active-habits-count').textContent = `습관 ${habits.length}개`;
+
+      let totalChecks = 0;
+      let totalOpportunities = daysInMonth * habits.length;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dKey = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayLogs = logs[dKey] || [];
+        totalChecks += dayLogs.length;
+      }
+
+      const overallRate = totalOpportunities === 0 ? 0 : Math.round((totalChecks / totalOpportunities) * 100);
+      document.getElementById('stat-overall-rate').textContent = `${overallRate}%`;
+      document.getElementById('monthly-header-badge').textContent = `${overallRate}% 달성`;
+      document.getElementById('stat-total-checks').textContent = `${totalChecks}회`;
+
+      let currentStreak = 0;
+      let maxStreak = 0;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dKey = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayLogs = logs[dKey] || [];
+        if (dayLogs.length > 0) {
+          currentStreak++;
+          if (currentStreak > maxStreak) maxStreak = currentStreak;
+        } else {
+          currentStreak = 0;
+        }
+      }
+      document.getElementById('stat-best-streak').textContent = `${maxStreak}일`;
+
+      renderMatrixGrid(year, monthNum, daysInMonth);
+      renderCalendarDots(year, monthNum, daysInMonth);
+      renderMonthlyHabitProgress(year, monthNum, daysInMonth);
+    }
+
+    // Matrix with a, b, c, d... headers
+    function renderMatrixGrid(year, month, daysInMonth) {
+      const table = document.getElementById('matrix-grid-table');
+      table.innerHTML = '';
+
+      if (habits.length === 0) {
+        table.innerHTML = '<p class="text-xs text-neutral-400 py-3">등록된 습관이 없습니다.</p>';
+        return;
+      }
+
+      // Matrix Header Row
+      const headerRow = document.createElement('div');
+      headerRow.className = 'flex items-center gap-1 pb-2 border-b border-neutral-100 text-[11px] font-bold text-neutral-500';
+      
+      const dayColHeader = document.createElement('div');
+      dayColHeader.className = 'w-6 text-center text-neutral-400 font-medium';
+      dayColHeader.textContent = '일';
+      headerRow.appendChild(dayColHeader);
+
+      habits.forEach((h, idx) => {
+        const letter = ALPHABET_LABELS[idx] || (idx + 1);
+        const col = document.createElement('div');
+        col.className = 'w-6 text-center text-xs font-bold text-neutral-700 force-lowercase';
+        col.title = `${letter}. ${h.title}`;
+        col.textContent = letter;
+        headerRow.appendChild(col);
+      });
+      table.appendChild(headerRow);
+
+      // Rows for days 1 to 31
+      for (let d = 1; d <= 31; d++) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-1 py-0.5';
+
+        const dayLabel = document.createElement('div');
+        dayLabel.className = 'w-6 text-center text-[10px] font-semibold text-neutral-400';
+        dayLabel.textContent = d;
+        row.appendChild(dayLabel);
+
+        const dKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayLogs = logs[dKey] || [];
+        const isPastOrToday = d <= daysInMonth;
+
+        habits.forEach((h, idx) => {
+          const letter = ALPHABET_LABELS[idx] || (idx + 1);
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.setAttribute('aria-label', `${month}월 ${d}일 ${letter}. ${h.title}`);
+          cell.className = 'w-6 h-6 rounded-full flex items-center justify-center transition-transform active:scale-90';
+
+          if (!isPastOrToday) {
+            cell.className += ' bg-neutral-50 opacity-20 cursor-default';
+          } else {
+            const isCompleted = dayLogs.includes(h.id);
+            if (isCompleted) {
+              cell.style.backgroundColor = h.color;
+              cell.title = `${month}월 ${d}일 [${letter}. ${h.title}] 완료! (클릭하여 변경)`;
+            } else {
+              cell.className += ' bg-neutral-100 hover:bg-neutral-200 border border-neutral-200/50';
+              cell.title = `${month}월 ${d}일 [${letter}. ${h.title}] 미완료 (클릭하여 완료)`;
+            }
+
+            cell.addEventListener('click', () => {
+              if (!logs[dKey]) logs[dKey] = [];
+              const cIdx = logs[dKey].indexOf(h.id);
+              if (cIdx > -1) {
+                logs[dKey].splice(cIdx, 1);
+              } else {
+                logs[dKey].push(h.id);
+              }
+              persistData();
+              renderMonthlyView();
+            });
+          }
+
+          row.appendChild(cell);
+        });
+
+        table.appendChild(row);
+      }
+
+      // Legend chips: Clean continuous inline list without extra title/line as requested!
+      const legendList = document.getElementById('matrix-legend-list');
+      legendList.innerHTML = '';
+      habits.forEach((h, idx) => {
+        const letter = ALPHABET_LABELS[idx] || (idx + 1);
+        const item = document.createElement('div');
+        item.className = 'flex items-center gap-1.5';
+        item.innerHTML = `
+          <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" style="background-color: ${h.color};"></span>
+          <span class="text-[11px] font-medium text-neutral-800"><b class="force-lowercase font-bold">${letter}.</b> ${h.title}</span>
+        `;
+        legendList.appendChild(item);
+      });
+    }
+
+    // Calendar View with colored dots below date
+    function renderCalendarDots(year, month, daysInMonth) {
+      const grid = document.getElementById('calendar-heatmap-grid');
+      grid.innerHTML = '';
+
+      const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
+
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        const blank = document.createElement('div');
+        blank.className = 'min-h-[50px] rounded-xl bg-neutral-50/50 opacity-30';
+        grid.appendChild(blank);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayLogs = logs[dKey] || [];
+
+        const cell = document.createElement('div');
+        cell.className = 'min-h-[50px] rounded-xl p-1 bg-white border border-neutral-200/70 flex flex-col justify-between shadow-2xs transition-all hover:border-neutral-400';
+
+        const numWrap = document.createElement('div');
+        numWrap.className = 'flex items-center justify-between';
+        const numSpan = document.createElement('span');
+        numSpan.className = 'text-[10px] font-semibold text-neutral-600 pl-0.5';
+        numSpan.textContent = d;
+        numWrap.appendChild(numSpan);
+        cell.appendChild(numWrap);
+
+        const dotsCluster = document.createElement('div');
+        dotsCluster.className = 'flex flex-wrap gap-0.5 justify-start p-0.5';
+
+        if (dayLogs.length > 0) {
+          habits.forEach(h => {
+            if (dayLogs.includes(h.id)) {
+              const dot = document.createElement('span');
+              dot.className = 'w-2 h-2 rounded-full inline-block flex-shrink-0 shadow-2xs';
+              dot.style.backgroundColor = h.color;
+              dot.title = h.title;
+              dotsCluster.appendChild(dot);
+            }
+          });
+        }
+        cell.appendChild(dotsCluster);
+
+        grid.appendChild(cell);
+      }
+
+      // Populate Calendar Dot Legend: Clean continuous inline list without extra title/line as requested!
+      const dotLegend = document.getElementById('calendar-dot-legend');
+      dotLegend.innerHTML = '';
+      habits.forEach((h, idx) => {
+        const letter = ALPHABET_LABELS[idx] || (idx + 1);
+        const item = document.createElement('div');
+        item.className = 'flex items-center gap-1.5';
+        item.innerHTML = `
+          <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" style="background-color: ${h.color};"></span>
+          <span class="text-[11px] font-medium text-neutral-800"><b class="force-lowercase font-bold">${letter}.</b> ${h.title}</span>
+        `;
+        dotLegend.appendChild(item);
+      });
+    }
+
+    function renderMonthlyHabitProgress(year, month, daysInMonth) {
+      const container = document.getElementById('monthly-habits-progress-list');
+      container.innerHTML = '';
+
+      habits.forEach((h, idx) => {
+        const letter = ALPHABET_LABELS[idx] || (idx + 1);
+        let completedDays = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const dayLogs = logs[dKey] || [];
+          if (dayLogs.includes(h.id)) completedDays++;
+        }
+
+        const pct = Math.round((completedDays / daysInMonth) * 100);
+
+        const card = document.createElement('div');
+        card.className = 'bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 flex flex-col gap-1';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${h.color};"></span>
+              <span class="text-xs font-medium text-neutral-800"><b class="force-lowercase">${letter}.</b> ${h.title}</span>
+            </div>
+            <div class="flex items-center gap-1 text-[11px]">
+              <span class="font-bold text-neutral-900">${pct}%</span>
+              <span class="text-neutral-400">(${completedDays}/${daysInMonth}일)</span>
+            </div>
+          </div>
+          <div class="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-300" style="width: ${pct}%; background-color: ${h.color};"></div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ==========================================
+    // BACKUP & RESTORE ACTIONS
+    // ==========================================
+    function exportDataAsJson() {
+      const exportObject = {
+        app: "DailyMonthlyTracker",
+        version: "4.0",
+        exportDate: new Date().toISOString(),
+        habits: habits,
+        logs: logs
+      };
+      const jsonStr = JSON.stringify(exportObject, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tracker_backup_${formatDateKey(new Date())}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('백업 파일이 다운로드되었습니다!');
+    }
+
+    function handleRestoreFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && Array.isArray(parsed.habits) && parsed.logs) {
+            habits = parsed.habits;
+            logs = parsed.logs;
+            persistData();
+            renderDailyView();
+            renderMonthlyView();
+            document.getElementById('modal-settings').classList.add('hidden');
+            showToast('데이터 복원이 완료되었습니다!');
+          } else {
+            showToast('올바른 백업 파일 형식이 아닙니다.');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('파일 읽기 오류가 발생했습니다.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ==========================================
+    // EVENT LISTENERS INITIALIZATION
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+
+      renderDailyView();
+
+      // Navigation: Go to Monthly View
+      document.getElementById('btn-go-monthly').addEventListener('click', () => {
+        document.getElementById('view-daily').classList.add('hidden');
+        document.getElementById('view-monthly').classList.remove('hidden');
+        renderMonthlyView();
+      });
+
+      // Navigation: Back to Daily View
+      const backButtons = ['btn-back-to-daily', 'btn-back-to-daily-bottom'];
+      backButtons.forEach(id => {
+        document.getElementById(id).addEventListener('click', () => {
+          document.getElementById('view-monthly').classList.add('hidden');
+          document.getElementById('view-daily').classList.remove('hidden');
+          renderDailyView();
+        });
+      });
+
+      // Week strip pagination
+      document.getElementById('btn-prev-week').addEventListener('click', () => {
+        selectedDate.setDate(selectedDate.getDate() - 7);
+        renderDailyView();
+      });
+
+      document.getElementById('btn-next-week').addEventListener('click', () => {
+        selectedDate.setDate(selectedDate.getDate() + 7);
+        renderDailyView();
+      });
+
+      document.getElementById('btn-today-jump').addEventListener('click', () => {
+        selectedDate = new Date(2026, 9, 20);
+        renderDailyView();
+      });
+
+      // Month pagination in Monthly view
+      document.getElementById('btn-prev-month').addEventListener('click', () => {
+        monthlyViewingDate.setMonth(monthlyViewingDate.getMonth() - 1);
+        renderMonthlyView();
+      });
+
+      document.getElementById('btn-next-month').addEventListener('click', () => {
+        monthlyViewingDate.setMonth(monthlyViewingDate.getMonth() + 1);
+        renderMonthlyView();
+      });
+
+      // Sub-tabs in Monthly view
+      document.getElementById('btn-tab-matrix').addEventListener('click', () => {
+        activeSubTab = 'matrix';
+        document.getElementById('subview-matrix').classList.remove('hidden');
+        document.getElementById('subview-heatmap').classList.add('hidden');
+        document.getElementById('btn-tab-matrix').className = 'px-2.5 py-0.5 rounded-md bg-white shadow-xs text-neutral-900 transition';
+        document.getElementById('btn-tab-heatmap').className = 'px-2.5 py-0.5 rounded-md text-neutral-500 hover:text-neutral-900 transition';
+        document.getElementById('monthly-subview-title').textContent = '1~31일 실천 매트릭스';
+      });
+
+      document.getElementById('btn-tab-heatmap').addEventListener('click', () => {
+        activeSubTab = 'heatmap';
+        document.getElementById('subview-matrix').classList.add('hidden');
+        document.getElementById('subview-heatmap').classList.remove('hidden');
+        document.getElementById('btn-tab-heatmap').className = 'px-2.5 py-0.5 rounded-md bg-white shadow-xs text-neutral-900 transition';
+        document.getElementById('btn-tab-matrix').className = 'px-2.5 py-0.5 rounded-md text-neutral-500 hover:text-neutral-900 transition';
+        document.getElementById('monthly-subview-title').textContent = '월간 실천 캘린더';
+      });
+
+      // Add Habit Modal: Auto-assigns random color, no manual picker
+      const openModalAdd = () => {
+        document.getElementById('input-habit-title').value = '';
+        document.getElementById('modal-add-habit').classList.remove('hidden');
+      };
+      document.getElementById('btn-open-add-habit').addEventListener('click', openModalAdd);
+      document.getElementById('btn-add-empty-habit').addEventListener('click', openModalAdd);
+
+      document.getElementById('btn-close-habit-modal').addEventListener('click', () => {
+        document.getElementById('modal-add-habit').classList.add('hidden');
+      });
+
+      // Save Habit button (permanently assigns random color from poster)
+      document.getElementById('btn-save-habit').addEventListener('click', () => {
+        const title = document.getElementById('input-habit-title').value.trim();
+        if (!title) {
+          showToast('트래커 이름을 입력해주세요');
+          return;
+        }
+        const assignedColor = getNextPosterColor();
+
+        const newHabit = {
+          id: 'h_' + Date.now(),
+          title: title,
+          color: assignedColor
+        };
+
+        habits.push(newHabit);
+        persistData();
+        document.getElementById('modal-add-habit').classList.add('hidden');
+        renderHabitList();
+        showToast('새 트래커가 등록되었습니다!');
+      });
+
+      // Settings Modal
+      document.getElementById('btn-open-settings').addEventListener('click', () => {
+        document.getElementById('modal-settings').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-settings-modal').addEventListener('click', () => {
+        document.getElementById('modal-settings').classList.add('hidden');
+      });
+
+      // Export JSON
+      document.getElementById('btn-export-json').addEventListener('click', exportDataAsJson);
+
+      // Restore JSON file
+      document.getElementById('input-restore-file').addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleRestoreFile(e.target.files[0]);
+        }
+      });
+
+      // Reset to clean state (clear all logs)
+      document.getElementById('btn-reset-sample').addEventListener('click', () => {
+        habits = [...USER_DEFAULT_HABITS];
+        logs = {};
+        persistData();
+        renderDailyView();
+        renderMonthlyView();
+        document.getElementById('modal-settings').classList.add('hidden');
+        showToast('모든 실천 기록이 깨끗하게 초기화되었습니다');
+      });
+
+    });
+  </script>
+</body>
+</html>
