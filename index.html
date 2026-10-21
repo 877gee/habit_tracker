@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>daily & monthly habit tracker</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <style>
@@ -32,17 +32,12 @@
 
     .habit-card {
       transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
-      -webkit-touch-callout: none !important;
-      -webkit-user-select: none !important;
-      user-select: none !important;
       touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .habit-card:active {
       transform: scale(0.97);
-    }
-    .habit-card.pressing {
-      transform: scale(0.94);
-      filter: brightness(0.92);
     }
   </style>
 </head>
@@ -54,18 +49,18 @@
     <!-- ========================================== -->
     <!-- VIEW 1: DAILY TRACKER                      -->
     <!-- ========================================== -->
-    <section id="view-daily" class="flex-1 flex flex-col p-5 pb-20 transition-all duration-300">
+    <section id="view-daily" class="flex-1 flex flex-col p-5 pb-28 transition-all duration-300">
       
       <!-- Top Header Row -->
       <header class="flex items-start justify-between mb-2 pt-1">
         <!-- Day name + Minimal Black Dot -->
         <div class="flex items-center gap-2">
-          <h1 id="header-day-name" class="text-3xl font-extrabold tracking-tight text-neutral-900 force-lowercase">fri</h1>
+          <h1 id="header-day-name" class="text-3xl font-extrabold tracking-tight text-neutral-900 force-lowercase">wed</h1>
           <span class="w-3 h-3 rounded-full bg-neutral-900 inline-block"></span>
         </div>
         <!-- Date & Year -->
         <div class="text-right force-lowercase">
-          <p id="header-month-day" class="text-sm font-semibold text-neutral-700">december 9</p>
+          <p id="header-month-day" class="text-sm font-semibold text-neutral-700">october 21</p>
           <p id="header-year" class="text-xs font-normal text-neutral-400">2026</p>
         </div>
       </header>
@@ -108,26 +103,35 @@
         <!-- Empty state placeholder -->
         <div id="habits-empty-state" class="hidden text-center py-10 px-4">
           <p class="text-sm font-semibold text-neutral-700 mb-1">등록된 트래커가 없습니다</p>
-          <p class="text-xs text-neutral-400 mb-3">하단의 + 추가를 눌러 트래커를 추가해보세요.</p>
+          <p class="text-xs text-neutral-400 mb-3">하단의 ··· 메뉴를 눌러 트래커를 추가해보세요.</p>
           <button id="btn-add-empty-habit" class="text-xs font-medium px-3.5 py-1.5 bg-neutral-900 text-white rounded-xl hover:bg-neutral-800 transition">
             + 트래커 추가하기
           </button>
         </div>
       </section>
 
-      <!-- Bottom Bar (Clean Text Only) -->
-      <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-6 py-3.5 bg-white/95 backdrop-blur-md border-t border-neutral-100 flex items-center justify-between z-20">
-        <button id="btn-go-monthly" class="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition py-1">
-          월간 보기
-        </button>
+      <!-- Bottom Bar: Lifted above home bar with bottom-4 and 3-column perfect center grid! -->
+      <footer class="fixed bottom-4 left-4 right-4 max-w-[400px] mx-auto px-5 py-3 bg-white/95 backdrop-blur-md rounded-2xl border border-neutral-200/90 shadow-sm z-30 grid grid-cols-3 items-center">
+        <!-- Left: Monthly View -->
+        <div class="text-left flex items-center">
+          <button id="btn-go-monthly" class="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition py-1">
+            월간 보기
+          </button>
+        </div>
 
-        <button id="btn-open-add-habit" class="text-xs font-semibold text-neutral-800 hover:text-black transition py-1">
-          + 추가
-        </button>
+        <!-- Center: Exactly Mathematically Centered ··· Menu Button -->
+        <div class="text-center flex justify-center items-center">
+          <button id="btn-open-add-habit" aria-label="트래커 관리 메뉴 열기" class="text-lg font-bold text-neutral-800 hover:text-black transition px-3 py-0.5 tracking-widest flex items-center justify-center leading-none">
+            ···
+          </button>
+        </div>
 
-        <button id="btn-open-settings" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition py-1">
-          백업
-        </button>
+        <!-- Right: Backup -->
+        <div class="text-right flex justify-end items-center">
+          <button id="btn-open-settings" class="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition py-1">
+            백업
+          </button>
+        </div>
       </footer>
     </section>
 
@@ -246,7 +250,36 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- MODAL 1: ADD HABIT (Name Only, Color is Auto-Assigned) -->
+    <!-- MODAL: ··· MANAGEMENT MENU (추가, 수정, 삭제) -->
+    <!-- ========================================== -->
+    <div id="modal-menu-action" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3 border border-neutral-200">
+        <div class="flex items-center justify-between pb-1 border-b border-neutral-100">
+          <h3 class="text-sm font-bold text-neutral-900">트래커 관리</h3>
+          <button id="btn-close-menu-action" aria-label="닫기" class="p-1 rounded-full text-neutral-400 hover:text-neutral-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- 3 Centered Action Buttons without descriptions -->
+        <div class="flex flex-col gap-2 py-1">
+          <button id="btn-menu-add" class="w-full py-3 rounded-2xl bg-neutral-50 hover:bg-neutral-100 text-neutral-900 font-semibold text-xs text-center border border-neutral-200/80 transition">
+            + 추가
+          </button>
+          
+          <button id="btn-menu-edit" class="w-full py-3 rounded-2xl bg-neutral-50 hover:bg-neutral-100 text-neutral-900 font-semibold text-xs text-center border border-neutral-200/80 transition">
+            이름 변경
+          </button>
+
+          <button id="btn-menu-delete" class="w-full py-3 rounded-2xl bg-red-50/70 hover:bg-red-50 text-red-600 font-semibold text-xs text-center border border-red-200/70 transition">
+            삭제
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: ADD HABIT (Auto-Assigned Random Color) -->
     <!-- ========================================== -->
     <div id="modal-add-habit" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
       <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200">
@@ -257,7 +290,6 @@
           </button>
         </div>
 
-        <!-- Name input (Only thing required!) -->
         <div>
           <label for="input-habit-title" class="block text-xs font-semibold text-neutral-600 mb-1">트래커 이름</label>
           <input id="input-habit-title" type="text" placeholder="예: 물 2L 마시기, 영어 단어" class="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:border-neutral-900 text-sm">
@@ -270,7 +302,79 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- MODAL 2: SETTINGS & BACKUP                 -->
+    <!-- MODAL 2: EDIT LIST MODAL (수정할 항목 선택) -->
+    <!-- ========================================== -->
+    <div id="modal-edit-list" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200 max-h-[80vh]">
+        <div class="flex items-center justify-between pb-2 border-b border-neutral-100">
+          <div>
+            <h3 class="text-sm font-bold text-neutral-900">트래커 이름 수정</h3>
+            <p class="text-[11px] text-neutral-400">수정할 트래커를 선택해 새로운 이름을 입력하세요</p>
+          </div>
+          <button id="btn-close-edit-list" aria-label="닫기" class="p-1 rounded-full text-neutral-400 hover:text-neutral-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div id="edit-habits-scroll-list" class="flex flex-col gap-2 overflow-y-auto max-h-[50vh] pr-1">
+          <!-- Populated dynamically with items to edit -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 3: DELETE LIST MODAL (삭제할 항목 선택) -->
+    <!-- ========================================== -->
+    <div id="modal-delete-list" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200 max-h-[80vh]">
+        <div class="flex items-center justify-between pb-2 border-b border-neutral-100">
+          <div>
+            <h3 class="text-sm font-bold text-red-600">트래커 삭제</h3>
+            <p class="text-[11px] text-neutral-400">삭제할 트래커 옆의 삭제 버튼을 누르세요</p>
+          </div>
+          <button id="btn-close-delete-list" aria-label="닫기" class="p-1 rounded-full text-neutral-400 hover:text-neutral-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div id="delete-habits-scroll-list" class="flex flex-col gap-2 overflow-y-auto max-h-[50vh] pr-1">
+          <!-- Populated dynamically with items to delete -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 4: SINGLE EDIT POPUP                 -->
+    <!-- ========================================== -->
+    <div id="modal-edit-habit" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="edit-modal-color-dot" class="w-3 h-3 rounded-full inline-block"></span>
+            <h3 class="text-base font-bold text-neutral-900">이름 변경</h3>
+          </div>
+          <button id="btn-close-edit-modal" aria-label="닫기" class="p-1 rounded-full text-neutral-400 hover:text-neutral-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div>
+          <label for="input-edit-habit-title" class="block text-xs font-semibold text-neutral-600 mb-1">새 이름 입력</label>
+          <input id="input-edit-habit-title" type="text" class="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:border-neutral-900 text-sm">
+        </div>
+
+        <button id="btn-save-edit-habit" class="w-full py-2.5 bg-neutral-900 hover:bg-black text-white font-semibold rounded-xl text-sm transition">
+          이름 변경하기
+        </button>
+
+        <button id="btn-delete-habit-action" class="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-200/80">
+          이 트래커 삭제하기
+        </button>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 5: SETTINGS & BACKUP                 -->
     <!-- ========================================== -->
     <div id="modal-settings" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
       <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200">
@@ -303,38 +407,8 @@
       </div>
     </div>
 
-        <!-- ========================================== -->
-    <!-- MODAL 3: EDIT / DELETE HABIT (Long Press)  -->
-    <!-- ========================================== -->
-    <div id="modal-edit-habit" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl animate-fade-in flex flex-col gap-3.5 border border-neutral-200">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span id="edit-modal-color-dot" class="w-3 h-3 rounded-full inline-block"></span>
-            <h3 class="text-base font-bold text-neutral-900">트래커 관리</h3>
-          </div>
-          <button id="btn-close-edit-modal" aria-label="닫기" class="p-1 rounded-full text-neutral-400 hover:text-neutral-600">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-        </div>
-
-        <div>
-          <label for="input-edit-habit-title" class="block text-xs font-semibold text-neutral-600 mb-1">이름 변경</label>
-          <input id="input-edit-habit-title" type="text" class="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:border-neutral-900 text-sm">
-        </div>
-
-        <button id="btn-save-edit-habit" class="w-full py-2.5 bg-neutral-900 hover:bg-black text-white font-semibold rounded-xl text-sm transition">
-          이름 변경하기
-        </button>
-
-        <button id="btn-delete-habit-action" class="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-200/80">
-          이 트래커 삭제하기
-        </button>
-      </div>
-    </div>
-
     <!-- In-Page Toast Notification -->
-    <div id="toast-message" class="pointer-events-none fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl opacity-0 transition-opacity duration-300">
+    <div id="toast-message" class="pointer-events-none fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl opacity-0 transition-opacity duration-300">
       저장되었습니다
     </div>
 
@@ -385,9 +459,9 @@
       '#d3e7b4'  // Pale Mint
     ];
 
-    const ALPHABET_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
+    const ALPHABET_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't'];
 
-    // User's 8 Default Habits with artwork colors
+    // Default habits if none exist in user's localStorage
     const USER_DEFAULT_HABITS = [
       { id: 'h1', title: '책 읽기', color: '#424a9f' },
       { id: 'h2', title: '운동하기', color: '#cf2526' },
@@ -399,33 +473,7 @@
       { id: 'h8', title: '돈 안 쓰기', color: '#6b1f5d' }
     ];
 
-    function generateSeedLogs() { return {};
-      const logs = {};
-      const year = 2026;
-      const month = 10;
-      for (let day = 1; day <= 20; day++) {
-        const dStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const completed = [];
-        if (day % 1 !== 0) continue;
-        if (day % 2 === 0 || day % 3 === 0) completed.push('h1');
-        if (day % 2 !== 0) completed.push('h2');
-        if (day % 3 !== 0) completed.push('h3');
-        if (day % 4 !== 0) completed.push('h4');
-        if (day % 2 === 0) completed.push('h5');
-        if (day % 3 === 0) completed.push('h6');
-        if (day % 5 !== 0) completed.push('h7');
-        if (day % 3 !== 0) completed.push('h8');
-        logs[dStr] = completed;
-      }
-      return logs;
-    }
-
-    // Clean reset for actual use: clear mock logs so all records start fresh from 0
-    if (!Storage.get('my_tracker_clean_v1', false)) {
-      Storage.set('my_tracker_habits', USER_DEFAULT_HABITS);
-      Storage.set('my_tracker_logs', {});
-      Storage.set('my_tracker_clean_v1', true);
-    }
+    // Preserves existing habits that the user has already added!
     let habits = Storage.get('my_tracker_habits', USER_DEFAULT_HABITS);
     let logs = Storage.get('my_tracker_logs', {});
     
@@ -437,6 +485,7 @@
     let selectedDate = getRealToday();
     let monthlyViewingDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     let activeSubTab = 'matrix';
+    let currentEditingHabitId = null;
 
     function formatDateKey(d) {
       const year = d.getFullYear();
@@ -519,8 +568,8 @@
         iterDate.setDate(monday.getDate() + i);
         const iterKey = formatDateKey(iterDate);
         const isSelected = iterKey === selectedKey;
-
         const isToday = iterKey === todayKey;
+
         const dayBtn = document.createElement('button');
         dayBtn.type = 'button';
         dayBtn.setAttribute('aria-label', `${iterDate.getMonth()+1}월 ${iterDate.getDate()}일 선택`);
@@ -545,9 +594,6 @@
     }
 
     // Render Habit 2-Column Grid
-    // Checked: card background is habit.color, text is centered with high-contrast text color, NO check circle!
-    // Unchecked: card background is white, text on left, empty circle on right.
-    // Checked items auto-sort to the bottom!
     function renderHabitList() {
       const container = document.getElementById('habits-list-container');
       const emptyState = document.getElementById('habits-empty-state');
@@ -579,11 +625,10 @@
 
       sortedHabits.forEach((habit) => {
         const isChecked = completedList.includes(habit.id);
-
         const card = document.createElement('div');
 
         if (isChecked) {
-          // CHECKED STATE: Background is habit's unique color, centered text, NO circle outline!
+          // Checked state: colored background, centered text, no circle!
           const textColor = getContrastTextColor(habit.color);
           card.className = 'habit-card relative rounded-2xl p-3 flex items-center justify-center cursor-pointer select-none shadow-xs border border-transparent';
           card.style.backgroundColor = habit.color;
@@ -595,7 +640,7 @@
           card.appendChild(titleSpan);
 
         } else {
-          // UNCHECKED STATE: White background, light gray border, text on left, empty circle on right!
+          // Unchecked state: white background, text on left, empty circle on right!
           card.className = 'habit-card relative rounded-2xl border border-neutral-200/90 bg-white p-3 flex items-center justify-between cursor-pointer select-none shadow-2xs hover:border-neutral-300';
 
           const titleSpan = document.createElement('span');
@@ -609,75 +654,8 @@
           card.appendChild(circleBtn);
         }
 
-        // Universal Long-Press & Edit handling (Pointer Events with distance threshold)
-        let pressTimer = null;
-        let didLongPress = false;
-        let startX = 0;
-        let startY = 0;
-
-        const onPointerDown = (e) => {
-          // Only primary button
-          if (e.button !== undefined && e.button !== 0) return;
-          didLongPress = false;
-          startX = e.clientX;
-          startY = e.clientY;
-          card.classList.add('pressing');
-
-          if (pressTimer) clearTimeout(pressTimer);
-          pressTimer = setTimeout(() => {
-            didLongPress = true;
-            card.classList.remove('pressing');
-            if (navigator.vibrate) {
-              try { navigator.vibrate(40); } catch(err) {}
-            }
-            openEditModal(habit);
-          }, 420);
-        };
-
-        const onPointerMove = (e) => {
-          if (!pressTimer) return;
-          const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-          // Allow up to 12px natural finger wobble on touch screens
-          if (dist > 12) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-            card.classList.remove('pressing');
-          }
-        };
-
-        const onPointerUp = () => {
-          card.classList.remove('pressing');
-          if (pressTimer) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-          }
-        };
-
-        card.addEventListener('pointerdown', onPointerDown);
-        card.addEventListener('pointermove', onPointerMove);
-        card.addEventListener('pointerup', onPointerUp);
-        card.addEventListener('pointercancel', onPointerUp);
-        card.addEventListener('pointerleave', onPointerUp);
-
-        // Desktop right-click
-        card.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          openEditModal(habit);
-        });
-
-        // Desktop double-click shortcut
-        card.addEventListener('dblclick', (e) => {
-          e.preventDefault();
-          openEditModal(habit);
-        });
-
-        // Click toggle: only if not a long press
-        card.addEventListener('click', (e) => {
-          if (didLongPress) {
-            didLongPress = false;
-            e.stopPropagation();
-            return;
-          }
+        // Tap toggle
+        card.addEventListener('click', () => {
           toggleHabit(habit.id);
         });
 
@@ -705,7 +683,8 @@
     function deleteHabit(habitId) {
       habits = habits.filter(h => h.id !== habitId);
       persistData();
-      renderHabitList();
+      renderDailyView();
+      renderMonthlyView();
       showToast('트래커가 삭제되었습니다');
     }
 
@@ -713,6 +692,13 @@
       const pct = total === 0 ? 0 : Math.round((checked / total) * 100);
       document.getElementById('daily-progress-detail').textContent = `${checked} / ${total} 완료 (${pct}%)`;
       document.getElementById('daily-progress-bar').style.width = `${pct}%`;
+    }
+
+    function openSingleEditModal(habit) {
+      currentEditingHabitId = habit.id;
+      document.getElementById('input-edit-habit-title').value = habit.title;
+      document.getElementById('edit-modal-color-dot').style.backgroundColor = habit.color;
+      document.getElementById('modal-edit-habit').classList.remove('hidden');
     }
 
     // ==========================================
@@ -760,7 +746,6 @@
       renderMonthlyHabitProgress(year, monthNum, daysInMonth);
     }
 
-    // Matrix with a, b, c, d... headers
     function renderMatrixGrid(year, month, daysInMonth) {
       const table = document.getElementById('matrix-grid-table');
       table.innerHTML = '';
@@ -770,7 +755,6 @@
         return;
       }
 
-      // Matrix Header Row
       const headerRow = document.createElement('div');
       headerRow.className = 'flex items-center gap-1 pb-2 border-b border-neutral-100 text-[11px] font-bold text-neutral-500';
       
@@ -789,7 +773,6 @@
       });
       table.appendChild(headerRow);
 
-      // Rows for days 1 to 31
       for (let d = 1; d <= 31; d++) {
         const row = document.createElement('div');
         row.className = 'flex items-center gap-1 py-0.5';
@@ -841,7 +824,7 @@
         table.appendChild(row);
       }
 
-      // Legend chips: Clean continuous inline list without extra title/line as requested!
+      // Legend chips: Clean continuous inline list
       const legendList = document.getElementById('matrix-legend-list');
       legendList.innerHTML = '';
       habits.forEach((h, idx) => {
@@ -856,7 +839,6 @@
       });
     }
 
-    // Calendar View with colored dots below date
     function renderCalendarDots(year, month, daysInMonth) {
       const grid = document.getElementById('calendar-heatmap-grid');
       grid.innerHTML = '';
@@ -903,7 +885,6 @@
         grid.appendChild(cell);
       }
 
-      // Populate Calendar Dot Legend: Clean continuous inline list without extra title/line as requested!
       const dotLegend = document.getElementById('calendar-dot-legend');
       dotLegend.innerHTML = '';
       habits.forEach((h, idx) => {
@@ -954,13 +935,69 @@
       });
     }
 
+    // Populate Edit List Modal
+    function renderEditHabitsList() {
+      const list = document.getElementById('edit-habits-scroll-list');
+      list.innerHTML = '';
+      if (habits.length === 0) {
+        list.innerHTML = '<p class="text-xs text-neutral-400 text-center py-4">수정할 트래커가 없습니다.</p>';
+        return;
+      }
+      habits.forEach(h => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl border border-neutral-200/80';
+        row.innerHTML = `
+          <div class="flex items-center gap-2 truncate pr-2">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${h.color};"></span>
+            <span class="text-xs font-medium text-neutral-900 truncate">${h.title}</span>
+          </div>
+          <button type="button" class="px-2.5 py-1 bg-neutral-900 text-white rounded-lg text-[11px] font-semibold hover:bg-black transition flex-shrink-0">
+            수정
+          </button>
+        `;
+        row.querySelector('button').addEventListener('click', () => {
+          document.getElementById('modal-edit-list').classList.add('hidden');
+          openSingleEditModal(h);
+        });
+        list.appendChild(row);
+      });
+    }
+
+    // Populate Delete List Modal
+    function renderDeleteHabitsList() {
+      const list = document.getElementById('delete-habits-scroll-list');
+      list.innerHTML = '';
+      if (habits.length === 0) {
+        list.innerHTML = '<p class="text-xs text-neutral-400 text-center py-4">삭제할 트래커가 없습니다.</p>';
+        return;
+      }
+      habits.forEach(h => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl border border-neutral-200/80';
+        row.innerHTML = `
+          <div class="flex items-center gap-2 truncate pr-2">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${h.color};"></span>
+            <span class="text-xs font-medium text-neutral-900 truncate">${h.title}</span>
+          </div>
+          <button type="button" class="px-2.5 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[11px] font-semibold hover:bg-red-100 transition flex-shrink-0">
+            삭제
+          </button>
+        `;
+        row.querySelector('button').addEventListener('click', () => {
+          deleteHabit(h.id);
+          renderDeleteHabitsList();
+        });
+        list.appendChild(row);
+      });
+    }
+
     // ==========================================
     // BACKUP & RESTORE ACTIONS
     // ==========================================
     function exportDataAsJson() {
       const exportObject = {
         app: "DailyMonthlyTracker",
-        version: "4.0",
+        version: "5.0",
         exportDate: new Date().toISOString(),
         habits: habits,
         logs: logs
@@ -1073,7 +1110,99 @@
         document.getElementById('monthly-subview-title').textContent = '월간 실천 캘린더';
       });
 
-      // Edit Modal Listeners
+      // Backdrop Click to Dismiss any modal by tapping outside
+      const allModalIds = [
+        'modal-menu-action',
+        'modal-add-habit',
+        'modal-edit-list',
+        'modal-delete-list',
+        'modal-edit-habit',
+        'modal-settings'
+      ];
+      allModalIds.forEach(id => {
+        const modalEl = document.getElementById(id);
+        if (modalEl) {
+          modalEl.addEventListener('click', (e) => {
+            if (e.target === modalEl) {
+              modalEl.classList.add('hidden');
+              if (id === 'modal-edit-habit') currentEditingHabitId = null;
+            }
+          });
+        }
+      });
+
+      // OPEN ··· MANAGEMENT MENU
+      document.getElementById('btn-open-add-habit').addEventListener('click', () => {
+        document.getElementById('modal-menu-action').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-menu-action').addEventListener('click', () => {
+        document.getElementById('modal-menu-action').classList.add('hidden');
+      });
+
+      // Menu Option 1: + 추가
+      document.getElementById('btn-menu-add').addEventListener('click', () => {
+        document.getElementById('modal-menu-action').classList.add('hidden');
+        document.getElementById('input-habit-title').value = '';
+        document.getElementById('modal-add-habit').classList.remove('hidden');
+      });
+
+      // Menu Option 2: 수정
+      document.getElementById('btn-menu-edit').addEventListener('click', () => {
+        document.getElementById('modal-menu-action').classList.add('hidden');
+        renderEditHabitsList();
+        document.getElementById('modal-edit-list').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-edit-list').addEventListener('click', () => {
+        document.getElementById('modal-edit-list').classList.add('hidden');
+      });
+
+      // Menu Option 3: 삭제
+      document.getElementById('btn-menu-delete').addEventListener('click', () => {
+        document.getElementById('modal-menu-action').classList.add('hidden');
+        renderDeleteHabitsList();
+        document.getElementById('modal-delete-list').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-delete-list').addEventListener('click', () => {
+        document.getElementById('modal-delete-list').classList.add('hidden');
+      });
+
+      // Add Modal triggers
+      document.getElementById('btn-add-empty-habit').addEventListener('click', () => {
+        document.getElementById('input-habit-title').value = '';
+        document.getElementById('modal-add-habit').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-habit-modal').addEventListener('click', () => {
+        document.getElementById('modal-add-habit').classList.add('hidden');
+      });
+
+      // Save Habit button (permanently assigns random color from poster)
+      document.getElementById('btn-save-habit').addEventListener('click', () => {
+        const title = document.getElementById('input-habit-title').value.trim();
+        if (!title) {
+          showToast('트래커 이름을 입력해주세요');
+          return;
+        }
+        const assignedColor = getNextPosterColor();
+
+        const newHabit = {
+          id: 'h_' + Date.now(),
+          title: title,
+          color: assignedColor
+        };
+
+        habits.push(newHabit);
+        persistData();
+        document.getElementById('modal-add-habit').classList.add('hidden');
+        renderDailyView();
+        renderMonthlyView();
+        showToast('새 트래커가 등록되었습니다!');
+      });
+
+      // Single Edit Modal Listeners
       document.getElementById('btn-close-edit-modal').addEventListener('click', () => {
         document.getElementById('modal-edit-habit').classList.add('hidden');
         currentEditingHabitId = null;
@@ -1106,40 +1235,6 @@
         document.getElementById('modal-edit-habit').classList.add('hidden');
         currentEditingHabitId = null;
         deleteHabit(targetId);
-      });
-
-      // Add Habit Modal: Auto-assigns random color, no manual picker
-      const openModalAdd = () => {
-        document.getElementById('input-habit-title').value = '';
-        document.getElementById('modal-add-habit').classList.remove('hidden');
-      };
-      document.getElementById('btn-open-add-habit').addEventListener('click', openModalAdd);
-      document.getElementById('btn-add-empty-habit').addEventListener('click', openModalAdd);
-
-      document.getElementById('btn-close-habit-modal').addEventListener('click', () => {
-        document.getElementById('modal-add-habit').classList.add('hidden');
-      });
-
-      // Save Habit button (permanently assigns random color from poster)
-      document.getElementById('btn-save-habit').addEventListener('click', () => {
-        const title = document.getElementById('input-habit-title').value.trim();
-        if (!title) {
-          showToast('트래커 이름을 입력해주세요');
-          return;
-        }
-        const assignedColor = getNextPosterColor();
-
-        const newHabit = {
-          id: 'h_' + Date.now(),
-          title: title,
-          color: assignedColor
-        };
-
-        habits.push(newHabit);
-        persistData();
-        document.getElementById('modal-add-habit').classList.add('hidden');
-        renderHabitList();
-        showToast('새 트래커가 등록되었습니다!');
       });
 
       // Settings Modal
