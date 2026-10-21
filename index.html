@@ -32,9 +32,17 @@
 
     .habit-card {
       transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+      -webkit-touch-callout: none !important;
+      -webkit-user-select: none !important;
+      user-select: none !important;
+      touch-action: manipulation;
     }
     .habit-card:active {
       transform: scale(0.97);
+    }
+    .habit-card.pressing {
+      transform: scale(0.94);
+      filter: brightness(0.92);
     }
   </style>
 </head>
@@ -421,9 +429,13 @@
     let habits = Storage.get('my_tracker_habits', USER_DEFAULT_HABITS);
     let logs = Storage.get('my_tracker_logs', {});
     
-    // Default active date: 2026-10-20
-    let selectedDate = new Date(2026, 9, 20);
-    let monthlyViewingDate = new Date(2026, 9, 1);
+    // Dynamic Real-time Date Synchronization with user system
+    function getRealToday() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+    let selectedDate = getRealToday();
+    let monthlyViewingDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     let activeSubTab = 'matrix';
 
     function formatDateKey(d) {
@@ -500,6 +512,7 @@
 
       const dayLetters = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
       const selectedKey = formatDateKey(selectedDate);
+      const todayKey = formatDateKey(getRealToday());
 
       for (let i = 0; i < 7; i++) {
         const iterDate = new Date(monday);
@@ -507,13 +520,14 @@
         const iterKey = formatDateKey(iterDate);
         const isSelected = iterKey === selectedKey;
 
+        const isToday = iterKey === todayKey;
         const dayBtn = document.createElement('button');
         dayBtn.type = 'button';
         dayBtn.setAttribute('aria-label', `${iterDate.getMonth()+1}월 ${iterDate.getDate()}일 선택`);
         dayBtn.className = `flex flex-col items-center py-1.5 px-0.5 rounded-xl transition-all ${
           isSelected 
             ? 'border-2 border-neutral-900 bg-neutral-100 shadow-xs' 
-            : 'border border-neutral-200/80 bg-white hover:bg-neutral-50 text-neutral-500'
+            : (isToday ? 'border border-neutral-900/60 bg-neutral-50 text-neutral-800' : 'border border-neutral-200/80 bg-white hover:bg-neutral-50 text-neutral-500')
         }`;
 
         dayBtn.innerHTML = `
@@ -595,50 +609,73 @@
           card.appendChild(circleBtn);
         }
 
-        // Long press handling for editing/deleting (mobile touch + desktop mouse)
+        // Universal Long-Press & Edit handling (Pointer Events with distance threshold)
         let pressTimer = null;
-        let isLongPress = false;
+        let didLongPress = false;
+        let startX = 0;
+        let startY = 0;
 
-        const startPress = (e) => {
-          isLongPress = false;
+        const onPointerDown = (e) => {
+          // Only primary button
+          if (e.button !== undefined && e.button !== 0) return;
+          didLongPress = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          card.classList.add('pressing');
+
+          if (pressTimer) clearTimeout(pressTimer);
           pressTimer = setTimeout(() => {
-            isLongPress = true;
-            if (navigator.vibrate) navigator.vibrate(30);
+            didLongPress = true;
+            card.classList.remove('pressing');
+            if (navigator.vibrate) {
+              try { navigator.vibrate(40); } catch(err) {}
+            }
             openEditModal(habit);
-          }, 500);
+          }, 420);
         };
 
-        const cancelPress = () => {
+        const onPointerMove = (e) => {
+          if (!pressTimer) return;
+          const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+          // Allow up to 12px natural finger wobble on touch screens
+          if (dist > 12) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+            card.classList.remove('pressing');
+          }
+        };
+
+        const onPointerUp = () => {
+          card.classList.remove('pressing');
           if (pressTimer) {
             clearTimeout(pressTimer);
             pressTimer = null;
           }
         };
 
-        card.addEventListener('touchstart', startPress, { passive: true });
-        card.addEventListener('touchend', (e) => {
-          cancelPress();
-          if (isLongPress) {
-            e.preventDefault();
-          }
-        });
-        card.addEventListener('touchmove', cancelPress, { passive: true });
-        card.addEventListener('touchcancel', cancelPress);
+        card.addEventListener('pointerdown', onPointerDown);
+        card.addEventListener('pointermove', onPointerMove);
+        card.addEventListener('pointerup', onPointerUp);
+        card.addEventListener('pointercancel', onPointerUp);
+        card.addEventListener('pointerleave', onPointerUp);
 
-        card.addEventListener('mousedown', startPress);
-        card.addEventListener('mouseup', cancelPress);
-        card.addEventListener('mouseleave', cancelPress);
-
-        // Right-click / context menu for desktop users
+        // Desktop right-click
         card.addEventListener('contextmenu', (e) => {
           e.preventDefault();
           openEditModal(habit);
         });
 
-        // Click to toggle only when NOT a long press
+        // Desktop double-click shortcut
+        card.addEventListener('dblclick', (e) => {
+          e.preventDefault();
+          openEditModal(habit);
+        });
+
+        // Click toggle: only if not a long press
         card.addEventListener('click', (e) => {
-          if (isLongPress) {
-            isLongPress = false;
+          if (didLongPress) {
+            didLongPress = false;
+            e.stopPropagation();
             return;
           }
           toggleHabit(habit.id);
@@ -1002,7 +1039,7 @@
       });
 
       document.getElementById('btn-today-jump').addEventListener('click', () => {
-        selectedDate = new Date(2026, 9, 20);
+        selectedDate = getRealToday();
         renderDailyView();
       });
 
